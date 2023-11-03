@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+selenium = "4.15.1"
+image = "1.5.33"
+numpy = "1.26.1"
+opencv-python = "4.8.1.78"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
+python_full_version = "3.9.18"
