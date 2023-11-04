@@ -4,10 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-selenium = "4.15.1"
+selenium = "4.15.0"
 image = "1.5.33"
 numpy = "1.26.1"
 opencv-python = "4.8.1.78"
+pandas = "*"
 
 [dev-packages]
 
