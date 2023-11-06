@@ -1,11 +1,10 @@
-from selenium import webdriver
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webdriver import WebDriver
 import os
 import datasource.transform as tf
 import time
+from utils.sel_utils import build_browser, delete_element_by_class, delete_element_by_xpath, lazy_click
 
 # 카카오 지도
 url = "https://map.kakao.com/"
@@ -14,47 +13,12 @@ raw_result_path = "datasource/captured/map-raw"
 ignore_done = True
 last_index = -1
 
-def build_browser():
-    options = webdriver.ChromeOptions()
-    # options.add_argument('--headless')
-    options.add_argument('--no-sandbox')
-    # options.add_argument('--disable-dev-shm-usage')
-    # service = webdriver.ChromeService(executable_path="chromedriver-mac-arm64/chromedriver")
 
-    driver = webdriver.Chrome(options=options)
-    driver.maximize_window()
-    driver.get(url)
-    return driver
-
-
-def delete_element_by_class(driver, class_name):
-    element = driver.find_element(by=By.CLASS_NAME, value=class_name)
-    driver.execute_script("""
-        var element = arguments[0];
-        element.parentNode.removeChild(element);
-        """, element)
-
-
-def delete_element_by_xpath(driver, value):
-    element = driver.find_element(by=By.XPATH, value=value)
-    driver.execute_script("""
-        var element = arguments[0];
-        element.parentNode.removeChild(element);
-        """, element)
-
-
-def lazy_click(driver, mark):
-    timeout = 20
-    driver.execute_script("arguments[0].click();",
-                          WebDriverWait(driver, timeout).until(EC.element_to_be_clickable(mark)))
-
-
-def zoom_in(driver):
-    # lazy_click(driver, (By.XPATH, "//button[@title='확대']"))
+def zoom_in(driver: WebDriver):
     lazy_click(driver, (By.XPATH, "//button[@title='확대']"))
 
 
-def search(driver, address, result_filename, raw_result_filename):
+def search(driver: WebDriver, address: str, result_filename: str, raw_result_filename: str):
     search_area = driver.find_element(by=By.CLASS_NAME, value="box_searchbar")
     search_input = search_area.find_element(value="search.keyword.query")
 
@@ -76,17 +40,20 @@ def search(driver, address, result_filename, raw_result_filename):
     except:
         print("except1")
 
-    zoom_in(driver)
-    time.sleep(2)
+    # zoom_in(driver)
+    # time.sleep(2)
 
     driver.save_screenshot(result_filename)
     time.sleep(1)
 
     # delete address area
-    area = driver.find_element(by=By.XPATH, value="//*[starts-with(@id, 'daum-maps-shape-')]")
-    driver.execute_script("arguments[0].setAttribute('style', arguments[1])", area, "display: none;")
-    time.sleep(1)
-    driver.save_screenshot(raw_result_filename)
+    try:
+        area = driver.find_element(by=By.XPATH, value="//*[starts-with(@id, 'daum-maps-shape-')]")
+        driver.execute_script("arguments[0].setAttribute('style', arguments[1])", area, "display: none;")
+        time.sleep(1)
+        driver.save_screenshot(raw_result_filename)
+    except:
+        print("")
 
     # clear
     lazy_click(driver, (By.CLASS_NAME, "clear"))
@@ -94,25 +61,35 @@ def search(driver, address, result_filename, raw_result_filename):
 
 
 def run():
-    driver = build_browser()
+    try:
+        driver = build_browser(url)
 
-    data = tf.read()
-    for index, row in data.iterrows():
-        if 0 < last_index == index:
-            break
+        data = tf.read()
+        for index, row in data.iterrows():
+            if 0 < last_index == index:
+                break
 
-        result_filename = f"{result_path}/{index}.png"
-        raw_result_filename = f"{raw_result_path}/{index}.png"
-        print(f"{os.getcwd()}/{result_filename}")
-        if ignore_done and os.path.isfile(f"{os.getcwd()}/{result_filename}") and os.path.isfile(f"{os.getcwd()}/{raw_result_filename}"):
-            print(f"skip already done -- {index}  {row['도로명주소']}")
-            continue
-        address = row['도로명주소']
-        search(driver, address, result_filename, raw_result_filename)
+            result_filename = f"{result_path}/{index}.png"
+            raw_result_filename = f"{raw_result_path}/{index}.png"
+            print(f"{os.getcwd()}/{result_filename}")
+            if ignore_done and os.path.isfile(f"{os.getcwd()}/{result_filename}") and os.path.isfile(f"{os.getcwd()}/{raw_result_filename}"):
+                print(f"skip already done -- {index}  {row['도로명주소']}")
+                continue
+            address: str = row['도로명주소']
+            if "," in address:
+                address = row['도로명주소'].split(",")[0]
+            search(driver, address, result_filename, raw_result_filename)
 
-    time.sleep(5)
-    driver.quit()
+        time.sleep(5)
+        driver.quit()
+        return True
+    except:
+        return False
 
 
 if __name__ == "__main__":
-    run()
+    while True:
+        res = run()
+        if res:
+            print("retry..")
+            break

@@ -1,7 +1,8 @@
 import pandas as pd
+from pandas import DataFrame
 
 data_path = "./datasource/raw_data.tsv"
-fields = ['법정동주소', '도로명주소']
+fields = ['시도', '시군구', '읍면', '동리', '법정동주소', '도로명주소']
 
 """
 raw-data format
@@ -17,7 +18,76 @@ def read():
     # print(slice)
     return data.loc[:, fields]
 
+def append_jibun_addr(data: DataFrame):
+    multi_addr_count = 0
+    data["법정동"] = "" # 동 OR 면 리 OR 면 OR 읍 리 OR 읍
+    data["번지-1"] = "" # 123-456 에서 123
+    data["번지-2"] = "" # 123-456 에서 456
+    for index, row in data.iterrows():
+        jibun_count: int = 0
+        address: str = row['법정동주소']
+        if "," in address:
+            address = address.split(',')[0]
+            # print(address)
+            multi_addr_count += 1
+
+        if len(row['시도']) > 0:
+            jibun_count += 1
+
+        if len(row['시군구']) > 0:
+            jibun_count += 1
+
+        if len(row['읍면']) > 0:
+            jibun_count += 1
+
+        if len(row['동리']) > 0:
+            jibun_count += 1
+
+        # 세종특별자치시 예외처리
+        if jibun_count == 2:
+            # print(f"two={row}")
+            jibun_count += 1
+
+        # 번지 추가
+        bunji = address.split(" ")[jibun_count]
+        if "-" in bunji:
+            data.at[index, "번지-1"] = bunji.split("-")[0]
+            data.at[index, "번지-2"] = bunji.split("-")[1]
+            # row["번지-1"] = bunji.split("-")[0]
+            # row["번지-2"] = bunji.split("-")[1]
+        else:
+            data.at[index, "번지-1"] = bunji
+
+        # 시군구 예외처리
+        # 1) 세종특별시 처리
+        if row['시도'] == "세종특별자치시":
+            data.at[index, "시군구"] = "세종특별자치시"
+        # 2) 시 누락
+        for sido in ["고양", "성남", "수원", "안산", "안양", "용인", "청주", "천안", "전주", "포항", "창원"] :
+            if sido in row['시군구']:
+                data.at[index, "시군구"] = sido + "시" + row['시군구'][2:]
+                # print(f"시군구 - {data.at[index, '시군구']}")
+
+        # 법정동 결합
+        bjdong = []
+        if len(row["읍면"]) > 0:
+            bjdong.append(row["읍면"])
+
+        if len(row["동리"]) > 0:
+            bjdong.append(row["동리"])
+
+        data.at[index, "법정동"] = " ".join(bjdong)
+        # print(f"{data.at[index, '법정동']}")
+
+
+    # print(data.loc[:, ['번지-1', '번지-2']])
+    # print(f"total={multi_addr_count}")
+    return data
+
+
+
 
 if __name__ == "__main__":
     print("tf")
-    read()
+    data: DataFrame = read()
+    append_jibun_addr(data)
