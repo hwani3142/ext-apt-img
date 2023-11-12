@@ -15,8 +15,21 @@ from utils.sel_utils import build_browser, delete_element_by_class, delete_eleme
 url = "https://open.eais.go.kr/opnsvc/opnSvcInqireView.do#"
 result_path = "datasource/captured/open"
 ignore_done = True
-first_index = 114
-last_index = -1
+start_index = 114
+end_index = -1
+last_exec_index = start_index
+retry_max = 3
+retries = {}
+
+def get_retry_safe(idx: int):
+    try:
+        return retries[idx]
+    except:
+        retries[idx] = 0
+        return 0
+
+def get_searchable_address(data: Series):
+    return f"${data['시도']} ${data['시군구']} ${data['법정동']} ${data['번지-1']}-${data['번지-2']}"
 
 def select_layout(driver: WebDriver):
     # depth1 6th, 도면정보
@@ -80,7 +93,7 @@ def select_filter(driver: WebDriver, data: Series, result_filename: str):
 
     # search
     driver.find_element(by=By.CLASS_NAME, value="btn_search").click()
-    time.sleep(10)
+    time.sleep(15)
 
     # focus popup btn
     results = driver.find_elements(by=By.CLASS_NAME, value="GMPopupRight")
@@ -109,31 +122,54 @@ def select_filter(driver: WebDriver, data: Series, result_filename: str):
 
 
 def run():
-    driver = build_browser(url, False)
-    select_layout(driver)
+    index_watch = 0
+    try:
+        driver = build_browser(url, False)
+        select_layout(driver)
 
-    data: DataFrame = tf.append_jibun_addr(tf.read())
-    for index, row in data.iterrows():
-        if index < first_index:
-            print(f"skip by range -- {index}  {row['도로명주소']}")
-            continue
+        data: DataFrame = tf.append_jibun_addr(tf.read())
+        for index, row in data.iterrows():
+            if index < start_index:
+                continue
 
-        if 0 < last_index == index:
-            break
+            if 0 < end_index == index:
+                break
 
-        result_filename = f"{result_path}/{index}.png"
+            # skip done for retry loop
+            if last_exec_index > index:
+                continue
 
-        print(f"{index} -- {row['도로명주소']}")
-        if ignore_done and os.path.isfile(f"{os.getcwd()}/{result_filename}"):
-            print(f"skip already done -- {index}  {row['도로명주소']}")
-            continue
+            # validate retry count
+            index_watch = index
+            retry = get_retry_safe(index_watch)
+            if retry > retry_max:
+                print(f"exceed retry -- {index}  {row['도로명주소']}")
+                continue
 
-        select_filter(driver, row, result_filename)
+            # skip done by seeking result file
+            result_filename = f"{result_path}/{index}.png"
+            address = get_searchable_address(row)
+            print(f"{index} -- {address}")
+            if ignore_done and os.path.isfile(f"{os.getcwd()}/{result_filename}"):
+                print(f"already done -- [{index}] {address}")
+                continue
 
-    time.sleep(2)
-    driver.quit()
-    print("end")
+            # extract data
+            select_filter(driver, row, result_filename)
+
+            last_exec_index = index
+
+        time.sleep(2)
+        driver.quit()
+        return True
+    except:
+        retries[index_watch] = index_watch + 1
+        return False
 
 
 if __name__ == "__main__":
-    run()
+    while True:
+        res = run()
+        if res:
+            print("retry..")
+            break

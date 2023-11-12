@@ -11,7 +11,8 @@ url = "https://map.kakao.com/"
 result_path = "datasource/captured/map"
 raw_result_path = "datasource/captured/map-raw"
 ignore_done = True
-last_index = -1
+start_index = 10895
+end_index = -1
 
 
 def zoom_in(driver: WebDriver):
@@ -66,16 +67,24 @@ def run():
 
         data = tf.read()
         for index, row in data.iterrows():
-            if 0 < last_index == index:
+            if index < start_index:
+                continue
+
+            if 0 < end_index == index:
                 break
 
             result_filename = f"{result_path}/{index}.png"
             raw_result_filename = f"{raw_result_path}/{index}.png"
-            print(f"{os.getcwd()}/{result_filename}")
-            if ignore_done and os.path.isfile(f"{os.getcwd()}/{result_filename}") and os.path.isfile(f"{os.getcwd()}/{raw_result_filename}"):
-                print(f"skip already done -- {index}  {row['도로명주소']}")
-                continue
             address: str = row['도로명주소']
+            print(f"{os.getcwd()}/{result_filename} - {address}")
+
+            if len(address) == 0:
+                print(f"skip empty address - {index} {address}")
+                continue
+
+            if ignore_done and os.path.isfile(f"{os.getcwd()}/{result_filename}") and os.path.isfile(f"{os.getcwd()}/{raw_result_filename}"):
+                print(f"skip already done -- {index}  {address}")
+                continue
             if "," in address:
                 address = row['도로명주소'].split(",")[0]
             search(driver, address, result_filename, raw_result_filename)
