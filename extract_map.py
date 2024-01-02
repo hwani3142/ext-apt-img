@@ -97,7 +97,7 @@ def run(data: DataFrame):
 
 
 if __name__ == "__main__":
-    data: DataFrame = tf.read()
+    data: DataFrame = tf.readSimple()
 
     while True:
         res = run(data)

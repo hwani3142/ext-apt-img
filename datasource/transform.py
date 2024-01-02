@@ -2,7 +2,7 @@ import pandas as pd
 from pandas import DataFrame
 
 data_path = "./datasource/raw_data.tsv"
-fields = ['시도', '시군구', '읍면', '동리', '법정동주소', '도로명주소']
+simple_fields = ['시도', '시군구', '읍면', '동리', '법정동주소', '도로명주소']
 
 """
 raw-data format
@@ -12,11 +12,11 @@ raw-data format
 def read():
     data = pd.read_csv(data_path, delimiter='\t', keep_default_na=False)
     print(data.head())
-    # for index, row in data.iterrows():
-    #     print(index, row['법정동주소'], "|", row['도로명주소'])
-    # slice = data.loc[:, ['시도', '시군구']]  # 컬럼 슬라이싱
-    # print(slice)
-    return data.loc[:, fields]
+    return data.loc[:]
+
+def readSimple():
+    data = read()
+    return data.loc[:, simple_fields]
 
 def append_jibun_addr(data: DataFrame):
     multi_addr_count = 0
@@ -89,5 +89,5 @@ def append_jibun_addr(data: DataFrame):
 
 if __name__ == "__main__":
     print("tf")
-    data: DataFrame = read()
+    data: DataFrame = readSimple()
     append_jibun_addr(data)

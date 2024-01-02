@@ -172,7 +172,7 @@ def run(data: DataFrame):
 
 
 if __name__ == "__main__":
-    data: DataFrame = tf.append_jibun_addr(tf.read())
+    data: DataFrame = tf.append_jibun_addr(tf.readSimple())
 
     while True:
         res = run(data)
