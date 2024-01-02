@@ -1,3 +1,4 @@
+from pandas import Series, DataFrame
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -11,7 +12,7 @@ url = "https://map.kakao.com/"
 result_path = "datasource/captured/map"
 raw_result_path = "datasource/captured/map-raw"
 ignore_done = True
-start_index = 10895
+start_index = 13973
 end_index = -1
 
 
@@ -61,11 +62,10 @@ def search(driver: WebDriver, address: str, result_filename: str, raw_result_fil
     print(f"done -- {result_filename}")
 
 
-def run():
+def run(data: DataFrame):
     try:
         driver = build_browser(url)
 
-        data = tf.read()
         for index, row in data.iterrows():
             if index < start_index:
                 continue
@@ -97,8 +97,10 @@ def run():
 
 
 if __name__ == "__main__":
+    data: DataFrame = tf.read()
+
     while True:
-        res = run()
+        res = run(data)
         if res:
             print("retry..")
             break

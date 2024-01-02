@@ -15,9 +15,9 @@ from utils.sel_utils import build_browser, delete_element_by_class, delete_eleme
 url = "https://open.eais.go.kr/opnsvc/opnSvcInqireView.do#"
 result_path = "datasource/captured/open"
 ignore_done = True
-start_index = 114
+start_index = 14959
 end_index = -1
-last_exec_index = start_index
+last_exec_index = start_index - 1
 retry_max = 3
 retries = {}
 
@@ -29,7 +29,7 @@ def get_retry_safe(idx: int):
         return 0
 
 def get_searchable_address(data: Series):
-    return f"${data['시도']} ${data['시군구']} ${data['법정동']} ${data['번지-1']}-${data['번지-2']}"
+    return f"{data['시도']} {data['시군구']} {data['법정동']} {data['번지-1']}-{data['번지-2']}"
 
 def select_layout(driver: WebDriver):
     # depth1 6th, 도면정보
@@ -44,7 +44,8 @@ def select_layout(driver: WebDriver):
     print("select 배치도")
     map = info.find_element(by=By.CLASS_NAME, value="dep2th")
     map.click()
-    time.sleep(2)
+    map.click()
+    time.sleep(10)
 
 def screenshot_and_close_popup(driver: WebDriver, filename: str):
     tabs = driver.window_handles
@@ -106,7 +107,7 @@ def select_filter(driver: WebDriver, data: Series, result_filename: str):
     actions.move_to_element(results[0]).perform()
 
     # click popup btn
-    index = len(results) - 1
+    index = 0
     driver.execute_script("arguments[0].click();", results[index])
     results[index].click()
     driver.execute_script("arguments[0].click();", results[index])
@@ -121,13 +122,15 @@ def select_filter(driver: WebDriver, data: Series, result_filename: str):
     force_reload(driver)
 
 
-def run():
-    index_watch = 0
-    try:
-        driver = build_browser(url, False)
-        select_layout(driver)
+def run(data: DataFrame):
+    global last_exec_index
 
-        data: DataFrame = tf.append_jibun_addr(tf.read())
+    driver = build_browser(url, False)
+    select_layout(driver)
+
+    index_watch = last_exec_index
+
+    try:
         for index, row in data.iterrows():
             if index < start_index:
                 continue
@@ -142,7 +145,7 @@ def run():
             # validate retry count
             index_watch = index
             retry = get_retry_safe(index_watch)
-            if retry > retry_max:
+            if retry >= retry_max:
                 print(f"exceed retry -- {index}  {row['도로명주소']}")
                 continue
 
@@ -163,13 +166,16 @@ def run():
         driver.quit()
         return True
     except:
-        retries[index_watch] = index_watch + 1
+        retries[index_watch] = get_retry_safe(index_watch) + 1
+        print(f"[{index_watch}] retry = {retries[index_watch]}")
         return False
 
 
 if __name__ == "__main__":
+    data: DataFrame = tf.append_jibun_addr(tf.read())
+
     while True:
-        res = run()
+        res = run(data)
         if res:
             print("retry..")
             break
