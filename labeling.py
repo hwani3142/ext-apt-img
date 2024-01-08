@@ -162,3 +162,4 @@ if __name__ == "__main__":
     print("labeling")
     data: DataFrame = tf.read()
     append_label(data)
+    # data.to_csv('datasource/raw_data_code.tsv', index=False, header=True, sep="\t")

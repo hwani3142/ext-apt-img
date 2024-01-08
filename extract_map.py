@@ -12,7 +12,7 @@ url = "https://map.kakao.com/"
 result_path = "datasource/captured/map"
 raw_result_path = "datasource/captured/map-raw"
 ignore_done = True
-start_index = 13973
+start_index = 0
 end_index = -1
 
 
@@ -20,7 +20,7 @@ def zoom_in(driver: WebDriver):
     lazy_click(driver, (By.XPATH, "//button[@title='확대']"))
 
 
-def search(driver: WebDriver, address: str, result_filename: str, raw_result_filename: str):
+def search(driver: WebDriver, address: str, result_filename: str):
     search_area = driver.find_element(by=By.CLASS_NAME, value="box_searchbar")
     search_input = search_area.find_element(value="search.keyword.query")
 
@@ -42,20 +42,21 @@ def search(driver: WebDriver, address: str, result_filename: str, raw_result_fil
     except:
         print("except1")
 
-    # zoom_in(driver)
-    # time.sleep(2)
+    # if house_count < 2000:
+    #     zoom_in(driver)
+    #     time.sleep(2)
 
     driver.save_screenshot(result_filename)
     time.sleep(1)
 
     # delete address area
-    try:
-        area = driver.find_element(by=By.XPATH, value="//*[starts-with(@id, 'daum-maps-shape-')]")
-        driver.execute_script("arguments[0].setAttribute('style', arguments[1])", area, "display: none;")
-        time.sleep(1)
-        driver.save_screenshot(raw_result_filename)
-    except:
-        print("")
+    # try:
+    #     area = driver.find_element(by=By.XPATH, value="//*[starts-with(@id, 'daum-maps-shape-')]")
+    #     driver.execute_script("arguments[0].setAttribute('style', arguments[1])", area, "display: none;")
+    #     time.sleep(1)
+    #     driver.save_screenshot(raw_result_filename)
+    # except:
+    #     print("")
 
     # clear
     lazy_click(driver, (By.CLASS_NAME, "clear"))
@@ -73,8 +74,7 @@ def run(data: DataFrame):
             if 0 < end_index == index:
                 break
 
-            result_filename = f"{result_path}/{index}.png"
-            raw_result_filename = f"{raw_result_path}/{index}.png"
+            result_filename = f"{result_path}/{row['코드']}.png"
             address: str = row['도로명주소']
             print(f"{os.getcwd()}/{result_filename} - {address}")
 
@@ -82,12 +82,12 @@ def run(data: DataFrame):
                 print(f"skip empty address - {index} {address}")
                 continue
 
-            if ignore_done and os.path.isfile(f"{os.getcwd()}/{result_filename}") and os.path.isfile(f"{os.getcwd()}/{raw_result_filename}"):
+            if ignore_done and os.path.isfile(f"{os.getcwd()}/{result_filename}"):
                 print(f"skip already done -- {index}  {address}")
                 continue
             if "," in address:
                 address = row['도로명주소'].split(",")[0]
-            search(driver, address, result_filename, raw_result_filename)
+            search(driver, address, result_filename)
 
         time.sleep(5)
         driver.quit()
