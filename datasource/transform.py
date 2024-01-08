@@ -1,8 +1,8 @@
 import pandas as pd
 from pandas import DataFrame
 
-data_path = "./datasource/raw_data.tsv"
-simple_fields = ['시도', '시군구', '읍면', '동리', '법정동주소', '도로명주소']
+data_path = "./datasource/raw_data_code.tsv"
+simple_fields = ['시도', '시군구', '읍면', '동리', '법정동주소', '도로명주소', '세대수', '코드']
 
 """
 raw-data format
