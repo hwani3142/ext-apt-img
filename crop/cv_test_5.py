@@ -40,8 +40,6 @@ def crop(code: str, margin: int):
     for x in range(0, width):
         for y in range(0, height):
             r, g, b = rgb.getpixel((x, y))
-            if x == 3745 and y == 3:
-                print(r, g, b)
             if BORDER_R_1 <= r <= BORDER_R_2 and BORDER_G_1 <= g <= BORDER_G_2 and BORDER_B_1 <= b <= BORDER_B_2:
                 # print(x, y)
                 if min_x >= x:

@@ -4,6 +4,8 @@ from matplotlib import pyplot as plt
 import datasource.transform as tf
 import numpy as np
 from PIL import Image
+import os
+import blur.blur_1 as blur
 
 BORDER_R_1 = 200
 BORDER_R_2 = 230
@@ -14,6 +16,16 @@ BORDER_B_2 = 180
 
 def crop(code: str, margin: int):
     file = f"./datasource/captured/map/{code}.png"
+    result_filename = f'./datasource/captured/map-crop/{code}.png'
+
+    if not os.path.isfile(f"{os.getcwd()}/{file}"):
+        print(f"skip empty address - {code}")
+        return
+
+    if os.path.isfile(f"{os.getcwd()}/{result_filename}"):
+        print(f"skip already done -- {code}")
+        return
+
     print(file)
 
     im = Image.open(file, 'r')
@@ -29,8 +41,6 @@ def crop(code: str, margin: int):
     for x in range(0, width):
         for y in range(0, height):
             r, g, b = rgb.getpixel((x, y))
-            if x == 3745 and y == 3:
-                print(r, g, b)
             if BORDER_R_1 <= r <= BORDER_R_2 and BORDER_G_1 <= g <= BORDER_G_2 and BORDER_B_1 <= b <= BORDER_B_2:
                 # print(x, y)
                 if min_x >= x:
@@ -58,7 +68,7 @@ def crop(code: str, margin: int):
     image = cv2.imread(file)
     img_trim = image[y:y+h, x:x+w]
     try:
-        cv2.imwrite(f'./datasource/captured/map-crop/{code}.png', img_trim)
+        cv2.imwrite(result_filename, img_trim)
     except:
         print(file)
     # org_image = cv2.imread('res.png')
@@ -70,9 +80,10 @@ def crop(code: str, margin: int):
 if __name__ == "__main__":
     data: DataFrame = tf.read()
     # for i in range(0, 18422):
-    subset = data.iloc[209:2000]
+    subset = data.iloc[0:18422]
     for index, row in subset.iterrows():
         crop(row['코드'], 0)
+        blur.blur(row['코드'])
 
     # file = f"./datasource/captured/map-crop/0.png"
     #
